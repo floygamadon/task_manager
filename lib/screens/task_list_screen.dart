@@ -14,6 +14,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   final TaskService _taskService = TaskService();
 
   // ── Firestore version (Phase D) ─────────────────────────────
+  // Add a task
   Future<void> _addTask() async {
     final title = _taskController.text.trim();
     if (title.isEmpty) return; // Block empty submissions
@@ -22,6 +23,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     _taskController.clear();
   }
 
+  // Toggle isCompleted in Firestore
   Future<void> _toggleTask(Task task) async {
     final updatedTask = task.copyWith(
         isCompleted: !task.isCompleted,
@@ -29,8 +31,29 @@ class _TaskListScreenState extends State<TaskListScreen> {
     await _taskService.updateTask(updatedTask);
   }
 
-  Future<void> _deleteTask(String taskId) async {
-    await _taskService.deleteTask(taskId);
+  // Permanently delete a task with a confirmation message
+  Future<void> _confirmDelete(Task task) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete task?'),
+        content: Text('Are you sure you want to delete "${task.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete == true) {
+      await _taskService.deleteTask(task.id);
+    }
   }
 
   @override
@@ -57,6 +80,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                       hintText: 'New task name...',
                       border: OutlineInputBorder(),
                     ),
+                    onSubmitted: (_) => _addTask(),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -110,12 +134,12 @@ class _TaskListScreenState extends State<TaskListScreen> {
                         ),
                       ),
                       leading: Checkbox(
-                        value: tasks[index].isCompleted,
+                        value: task.isCompleted,
                         onChanged: (_) => _toggleTask(task), 
                       ),
                       trailing: IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () => _deleteTask(task.id),
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () => _confirmDelete(task),
                       ),
                     );
                   },
