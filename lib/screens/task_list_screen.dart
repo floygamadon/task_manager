@@ -11,6 +11,7 @@ class TaskListScreen extends StatefulWidget {
 
 class _TaskListScreenState extends State<TaskListScreen> {
   final TextEditingController _taskController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   final TaskService _taskService = TaskService();
 
   // ── Firestore version (Phase D) ─────────────────────────────
@@ -59,6 +60,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   @override
   void dispose() {
     _taskController.dispose(); // IMPORTANT: always dispose controllers
+    _searchController.dispose(); // IMPORTANT: dispose search controllers
     super.dispose();
   }
 
@@ -92,6 +94,23 @@ class _TaskListScreenState extends State<TaskListScreen> {
             ),
           ),
 
+          // ── Search bar ──────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                hintText: 'Search tasks...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (_) {
+                setState(() {}); // Rebuild UI as user types
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+
           // ── Task list from Firestore stream ──────────────────────────────────────────
           Expanded(
             child: StreamBuilder<List<Task>>(
@@ -111,18 +130,32 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
                 // State 3: Data arrived
                 final tasks = snapshot.data ?? [];
+                final query = _searchController.text.trim().toLowerCase();
+
+                final filteredTasks = query.isEmpty
+                    ? tasks
+                    : tasks.where((task) {
+                        return task.title.toLowerCase().contains(query);
+                      }).toList();
 
                 // State 4: Collection is empty
                 if (tasks.isEmpty) {
                   return const Center(
                     child: Text('No tasks yet. Add one above!'),
                   );
-                }    
+                } 
+
+                // State 5: Search returned no matches
+                if (filteredTasks.isEmpty) {
+                  return const Center(
+                    child: Text('No matching tasks found.'),
+                  );
+                }
 
                 return ListView.builder(
-                  itemCount: tasks.length,
+                  itemCount: filteredTasks.length,
                   itemBuilder: (context, index) {
-                    final task = tasks[index];
+                    final task = filteredTasks[index];
 
                     return ListTile(
                       title: Text(
