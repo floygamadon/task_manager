@@ -78,9 +78,11 @@ class _TaskListScreenState extends State<TaskListScreen> {
                 Expanded(
                   child: TextField(
                     controller: _taskController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'New task name...',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     onSubmitted: (_) => _addTask(),
                   ),
